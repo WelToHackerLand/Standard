@@ -1,0 +1,90 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+const int N = 1e5 + 4;
+int n;
+string S, str;
+
+struct Trie {
+	int numNode, Next[N][30], KMP[N], lenString[N];
+	int Skip[N][30];
+	bool isLeaf[N];
+
+	Trie() { 
+		numNode = 0;
+		for (int i = 0; i < N; ++i) {
+			KMP[i] = lenString[i] = 0; isLeaf[i] = false;
+			for (int c = 0; c < 26; ++c) Next[i][c] = 0;
+		}
+	}
+
+	void insert(string s) {
+		int point = 0;
+		for (int i = 0; i < (int) s.length(); ++i) {
+			int c = s[i] - 'a';
+			if (!Next[point][c]) Next[point][c] = ++numNode;
+			point = Next[point][c]; 
+		}
+		isLeaf[point] = true; lenString[point] = s.length(); 
+	}
+
+	queue<int> Q;
+	void Build_KMP() {
+		Q.push(0);
+
+		while (Q.size()) {
+			int u = Q.front(); Q.pop();
+			for (int c = 0; c < 26; ++c) {
+				int v = Next[u][c];
+				if (v != 0) {
+					if (u != 0) KMP[v] = Skip[KMP[u]][c]; else KMP[v] = 0;
+					Q.push(v);
+				}
+
+				Skip[u][c] = (Next[u][c]) ? Next[u][c] : Skip[KMP[u]][c];
+			}
+		}
+	} 
+
+} tree;
+
+stack<int> Stack;
+vector<int> ans;
+int save[N];
+
+void sol() {
+	tree.Build_KMP();
+
+	int point = 0;
+	for (int i = 0; i < (int) S.length(); ++i) {
+		point = tree.Skip[point][S[i]-'a'];
+		Stack.push(i); save[i] = point;
+		if (tree.isLeaf[point]) {
+			int len = tree.lenString[point]; 
+			while (len > 0) Stack.pop(), len--;
+		}
+		if (Stack.size()) point = save[Stack.top()];
+		else point = 0;
+	}
+
+	while (Stack.size()) ans.push_back(Stack.top()), Stack.pop();
+	reverse(ans.begin(), ans.end());
+
+	for (int pos : ans) cout << S[pos]; cout << '\n';
+}
+
+int main() {
+	ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+	freopen("censor.in", "r", stdin);
+	freopen("censor.out", "w", stdout);
+
+	cin >> S >> n;
+	for (int i = 1; i <= n; ++i) {
+		cin >> str;
+		tree.insert(str);
+	}
+
+	sol();
+
+	return 0;
+}
