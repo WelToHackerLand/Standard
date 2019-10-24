@@ -1,0 +1,143 @@
+/// 1553 timus
+#include<bits/stdc++.h>
+using namespace std;
+
+void Read(int &val) {
+	val = 0; char c;
+	do { c = getchar(); } while (!isdigit(c));
+	while (isdigit(c)) { val = val * 10 + c - '0'; c = getchar(); }
+}
+void Read(char &c) {
+	do { c = getchar(); } while (!isalpha(c));
+}
+void Write(int val) {
+	if (val < 10) putchar('0' + val);
+	else Write(val/10), putchar('0' + val%10);
+}
+
+const int N = 1e5 + 4, LOG = 20;
+int Q, n;
+vector<int> adj[N];
+
+int par[N][LOG+2], hei[N], CountChild[N];
+
+void DFS(int dad, int u) {
+	hei[u] = hei[dad] + 1; 
+	CountChild[u] = 1;
+	for (int v : adj[u]) if (v != dad) {
+		DFS(u, v);
+		CountChild[u] += CountChild[v];
+		par[v][0] = u;
+	}
+}
+
+void BuildLCA() {
+	for (int j = 1; j <= LOG; ++j) for (int i = 1; i <= n; ++i) 
+		par[i][j] = par[par[i][j-1]][j-1];
+}
+int getLCA(int u, int v) {
+	if (hei[u] < hei[v]) swap(u, v);
+	for (int i = LOG; i >= 0; --i) if (hei[u] - (1<<i) >= hei[v]) u = par[u][i];
+	if (u == v) return u;
+	for (int i = LOG; i >= 0; --i) 
+		if (par[u][i] != 0 && par[v][i] != 0 && par[u][i] != par[v][i]) {
+			u = par[u][i]; v = par[v][i];
+		}
+	return par[u][0];
+}
+
+int numChain, numArr, headChain[N], belong[N], pos[N];
+
+void HLD(int dad, int u) {
+	if (headChain[numChain] == 0) headChain[numChain] = u;
+	belong[u] = numChain; 
+	pos[u] = ++numArr;
+
+	int biggest = 0;
+	for (int v : adj[u]) if (v != dad && CountChild[v] >= CountChild[biggest]) biggest = v;
+	if (biggest != 0) HLD(u, biggest);
+
+	for (int v : adj[u]) if (v != dad && v != biggest) {
+		++numChain; HLD(u, v);
+	}
+}
+
+struct Interval_Tree {
+	int node[4*N];	
+	Interval_Tree() { memset(node, 0, sizeof(node)); }
+
+	void update(int i, int l, int r, int x, int y, int val) {
+		if (l > y || x > r) return;
+		if (x <= l && r <= y) {
+			node[i] += val; return;
+		}
+		int mid = (l + r) / 2;
+		update(2*i, l, mid, x, y, val);
+		update(2*i+1, mid+1, r, x, y, val);
+		node[i] = max(node[2*i], node[2*i+1]);
+	}
+	int get(int i, int l, int r, int x, int y) {
+		if (l > y || x > r) return 0;
+		if (x <= l && r <= y) return node[i];
+		int mid = (l + r) / 2;
+		int tmp1 = get(2*i, l, mid, x, y);
+		int tmp2 = get(2*i+1, mid+1, r, x, y);
+		return max(tmp1, tmp2); 
+	}
+} IT;
+
+int Query(int u, int dad) {
+	int res = 0;
+	while (true) {
+		if (belong[u] == belong[dad]) {
+			int val = IT.get(1, 1, n, min(pos[u], pos[dad]), max(pos[u], pos[dad]));
+			res = max(res, val);
+			break;
+		}
+
+		int Next = headChain[belong[u]];
+		int val = IT.get(1, 1, n, min(pos[u], pos[Next]), max(pos[u], pos[Next]));
+		res = max(res, val);
+
+		u = par[Next][0];
+	}
+	return res;
+}
+
+void AnswerQuery() {
+	Read(Q);
+	char type; int u, v;
+	while (Q--) {
+		Read(type); Read(u); Read(v);
+		if (type == 'I') IT.update(1, 1, n, pos[u], pos[u], v); 
+		else {
+			int dad = getLCA(u, v);
+			int tmp1 = Query(u, dad), tmp2 = Query(v, dad);
+			Write(max(tmp1, tmp2)); putchar('\n');
+		}
+	}
+}
+
+void sol() {
+	DFS(0, 1);
+	BuildLCA();
+
+	numChain = 1; HLD(0, 1);
+
+	AnswerQuery();
+}
+
+int main() {
+	freopen("input.txt", "r", stdin);
+
+	Read(n);
+	int u, v;
+	for (int i = 1; i < n; ++i) {
+		Read(u); Read(v); 
+		adj[u].push_back(v); adj[v].push_back(u);
+	}
+
+	sol();
+
+	return 0;
+}
