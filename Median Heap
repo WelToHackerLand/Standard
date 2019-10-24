@@ -1,0 +1,38 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+struct median_heap() {
+    multiset<int> L, R;
+
+    void clear() { L.clear(); R.clear(); }
+
+    void balance() {
+        while (L.size() > R.size()) {
+            R.insert(*L.rbegin());
+            L.erase(L.rbegin());
+        }
+        while (L.size() + 1 < R.size()) {
+            L.insert(*R.begin());
+            R.erase(*R.begin());
+        }
+    }
+
+    void insert(int val) {
+        if (val >= *(R.begin())) R.insert(val);
+        else L.insert(val);
+        balance();
+    }
+
+    void erase(int val) {
+        if (v > (*R.begin())) R.erase(val);
+        else L.erase(val);
+        balance();
+    }
+
+    int get() {
+        if ( (L.size() + R.size()) % 2 == 0 ) return *L.rbegin();
+        return *R.begin();
+    }
+};
+
+int main() {}
